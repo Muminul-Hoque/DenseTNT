@@ -14,7 +14,6 @@ HIDDEN_SIZE = 128
 OBS_LEN = 50
 PRED_LEN = 50
 
-# Lane vector coordinate positions (matches DenseTNT's VECTOR_* constants)
 VECTOR_PRE_X = 0
 VECTOR_PRE_Y = 1
 VECTOR_X = 2
@@ -27,9 +26,7 @@ def pad_vector(li):
 
 
 def build_agent_vectors(feats, has_obss):
-    # feats: (N_agents, 50, 3) — xy positions in local frame + one extra feature
-    # has_obss: (N_agents, 50) — validity mask per timestep
-    # returns: vectors list, polyline_spans list, agents list
+    
     vectors = []
     polyline_spans = []
     agents = []
@@ -62,14 +59,13 @@ def build_agent_vectors(feats, has_obss):
 
 
 def build_lane_vectors(graph, offset):
-    # graph: dict from V2X-Seq pkl with ctrs, feats, turn, control, intersect, lane_idcs
-    # offset: number of agent vectors already added (for correct span indices)
-    ctrs = graph['ctrs']          # (N, 2)
-    feats = graph['feats']        # (N, 2) direction vectors per node
-    turn = graph['turn']          # (N, 2) left/right turn binary
-    control = graph['control']    # (N,) traffic control flag
-    intersect = graph['intersect']  # (N,) intersection flag
-    lane_idcs = graph['lane_idcs']  # (N,) which lane each node belongs to
+    
+    ctrs = graph['ctrs']         
+    feats = graph['feats']      
+    turn = graph['turn']         
+    control = graph['control']   
+    intersect = graph['intersect']  
+    lane_idcs = graph['lane_idcs']  
 
     vectors = []
     polyline_spans = []
@@ -137,13 +133,13 @@ def build_lane_vectors(graph, offset):
 
 
 def convert_sample(raw_data, args):
-    feats = raw_data['feats'].values[0]         # (N_agents, 50, 3)
-    has_obss = raw_data['has_obss'].values[0]   # (N_agents, 50)
-    gt_preds = raw_data['gt_preds'].values[0]   # (N_agents, 50, 2)
-    tar_candts = raw_data['tar_candts'].values[0]  # (M, 2)
-    gt_candts = raw_data['gt_candts'].values[0]    # (M, 1)
+    feats = raw_data['feats'].values[0]        
+    has_obss = raw_data['has_obss'].values[0]  
+    gt_preds = raw_data['gt_preds'].values[0]  
+    tar_candts = raw_data['tar_candts'].values[0]  
+    gt_candts = raw_data['gt_candts'].values[0]   
     graph = raw_data['graph'].values[0]
-    orig = raw_data['orig'].values[0]           # (2,)
+    orig = raw_data['orig'].values[0]          
     theta = float(raw_data['theta'].values[0])
     seq_id = str(raw_data['seq_id'].values[0])
     city = raw_data['city'].values[0]
@@ -156,16 +152,11 @@ def convert_sample(raw_data, args):
     lane_vecs, lane_spans, polygons = build_lane_vectors(graph, offset=len(agent_vecs))
 
     all_vecs = agent_vecs + lane_vecs
-    # lane_spans indices already include offset applied in build_lane_vectors
     all_spans = agent_spans + lane_spans
 
     matrix = np.array(all_vecs, dtype=np.float32)
-
-    # Full future trajectory of target agent — gt_preds[0] is already the pred sequence
-    labels = gt_preds[0]  # (50, 2)
-
-    # Closest goal candidate to final position
-    goals_2D = tar_candts  # (M, 2)
+    labels = gt_preds[0] 
+    goals_2D = tar_candts 
     point_label = labels[-1]
     goals_2D_labels = int(np.argmin(np.linalg.norm(goals_2D - point_label, axis=1)))
 
@@ -246,11 +237,10 @@ def post_eval(args, file2pred, file2labels, DEs):
         score_file += '.' + str(each)
     score_file += '.score'
 
-    # Compute minADE, minFDE, MR
     minADEs, minFDEs, MRs = [], [], []
     for seq_id in file2pred:
-        preds = file2pred[seq_id]   # list of (50, 2) arrays
-        gt = file2labels[seq_id]    # (50, 2)
+        preds = file2pred[seq_id]   
+        gt = file2labels[seq_id]   
         fdes = [np.linalg.norm(p[-1] - gt[-1]) for p in preds]
         ades = [np.mean(np.linalg.norm(p - gt, axis=1)) for p in preds]
         minFDEs.append(min(fdes))
