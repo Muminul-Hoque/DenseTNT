@@ -243,7 +243,7 @@ def run_training_process(rank, world_size, args, queue):
         args.reuse_temp_file = True
 
     if args.argoverse:
-        from dataset_argoverse import Dataset
+        from dataset_v2xseq import Dataset
         train_dataset = Dataset(args, args.train_batch_size, to_screen=args.distributed_training == 0)
 
         if args.distributed_training:
@@ -251,7 +251,6 @@ def run_training_process(rank, world_size, args, queue):
         else:
             train_sampler = RandomSampler(train_dataset)
 
-        assert args.train_batch_size == 64, 'The optimal total batch size for training is 64'
         assert args.train_batch_size % world_size == 0
         train_dataloader = torch.utils.data.DataLoader(
             train_dataset, sampler=train_sampler,
@@ -291,7 +290,7 @@ def do_train(args):
 
     print("Loading dataset", args.data_dir)
     if args.argoverse:
-        from dataset_argoverse import Dataset
+        from dataset_v2xseq import Dataset
 
     if args.distributed_training:
         queue = mp.Manager().Queue()
