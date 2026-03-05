@@ -66,7 +66,6 @@ def build_lane_vectors(graph, offset):
     control = graph['control']   
     intersect = graph['intersect']  
     lane_idcs = graph['lane_idcs']  
-
     vectors = []
     polyline_spans = []
     polygons = []
@@ -169,7 +168,9 @@ def convert_sample(raw_data, args):
             if d < min_dis:
                 min_dis = d
                 stage_one_label = i
-
+    # V2X-Seq trajectories are already in local agent-centric frame.
+    # Setting cent to UTM origin (~417894, 4730251) causes to_origin_coordinate()
+    # to produce predictions ~4.7M meters off.
     mapping = dict(
         file_name=seq_id + '.csv',
         city_name=city,
